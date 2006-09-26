@@ -15,7 +15,7 @@
 		<cfreturn "Operation,AtFirst,AtSecond,Count">
 	</cffunction>
 	
-	<cffunction name="AddDifference" hint="Given a result query, add the new difference to it" access="private" output="false">
+	<cffunction name="AddDifference" hint="Given a result query, add the new difference to it" access="public" output="false">
 		<cfargument name="Result" type="query" required="true">
 		<cfargument name="Operation" type="string" required="true">
 		<cfargument name="AtFirst" type="string" required="true">
@@ -53,8 +53,8 @@
 		<cfset var One=ArrayNew(1)>
 		<cfset var Two=ArrayNew(1)>
 		<cfset var LCS=ArrayNew(2)>
-		<cfset ArrayResize(One,OneLen)>
-		<cfset ArrayResize(Two,TwoLen)>
+		<cfif OneLen GT 0><cfset ArrayResize(One,OneLen)></cfif>
+		<cfif TwoLen GT 0><cfset ArrayResize(Two,TwoLen)></cfif>
 		<cfset ArrayResize(LCS,OneLen+1)>
 		<cfloop from="1" to="#OneLen#" index="i">
 			<cfset One[i]=Hash(Arguments.First[i])>
