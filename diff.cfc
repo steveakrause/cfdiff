@@ -53,88 +53,110 @@
 		<cfset var One=ArrayNew(1)>
 		<cfset var Two=ArrayNew(1)>
 		<cfset var LCS=ArrayNew(2)>
+		<cfset var OneStart=1>
+		<cfset var TwoStart=1>
+		<cfset var OneStop=OneLen>
+		<cfset var TwoStop=TwoLen>
+		<cfset var ValIndexes=StructNew()>
+		<cfset var NextIndex=1>
 		<cfif OneLen GT 0><cfset ArrayResize(One,OneLen)></cfif>
 		<cfif TwoLen GT 0><cfset ArrayResize(Two,TwoLen)></cfif>
-		<cfset ArrayResize(LCS,OneLen+1)>
+		<!--- 
+		Comparing lines is really slow because string comparisons are slow.
+		Instead, we take either the line or the hash of the line (whichever is shorter).
+		Then we give each unique line a unique identifier (index).
+		Comparing indexes (integers) is therefore much faster.
+		--->
 		<cfloop from="1" to="#OneLen#" index="i">
-			<cfset One[i]=Hash(Arguments.First[i])>
+			<cfset k=Arguments.First[i]>
+			<cfif Len(k) GT 32><cfset k=Hash(k)></cfif>
+			<cfif NOT StructKeyExists(ValIndexes,k)>
+				<cfset ValIndexes[k]=NextIndex>
+				<cfset NextIndex=NextIndex+1>
+			</cfif>
+			<cfset One[i]=ValIndexes[k]>
 			<!--- Allocate our LCS array as we go --->
-			<cfset ArrayResize(LCS[i],TwoLen+1)>
-			<!--- Initialize the last cell in each as we go --->
-			<cfset LCS[i][TwoLen+1]=0>
 		</cfloop>
 		<!--- Add in the extra array --->
 		<cfset ArrayResize(LCS[OneLen+1],TwoLen+1)>
 		<cfloop from="1" to="#TwoLen#" index="j">
-			<cfset Two[j]=Hash(Arguments.Second[j])>
-			<!---
-			Since the arrays don't start off initialized, we need to set the last row to all zero 
-			Would this be faster with a single ArraySet() ?
-			--->
+			<cfset k=Arguments.Second[j]>
+			<cfif Len(k) GT 32><cfset k=Hash(k)></cfif>
+			<cfif NOT StructKeyExists(ValIndexes,k)>
+				<cfset ValIndexes[k]=NextIndex>
+				<cfset NextIndex=NextIndex+1>
+			</cfif>
+			<cfset Two[j]=ValIndexes[k]>
+		</cfloop>
+		<!--- Let's skip past the part at the frint that is the same, if any --->
+		<cfloop condition="(OneStart LTE OneLen) AND (TwoStart LTE TwoLen) AND (One[OneStart] EQ Two[TwoStart])">
+			<cfset OneStart=OneStart+1>
+			<cfset TwoStart=TwoStart+1>
+		</cfloop>
+		<!--- Then do the same in reverse --->
+		<cfloop condition="(OneStop GTE OneStart) AND (TwoStop GTE TwoStart) AND (One[OneStop] EQ Two[TwoStop])">
+			<cfset OneStop=OneStop-1>
+			<cfset TwoStop=TwoStop-1>
+		</cfloop>
+		<!--- Now we do a bit of mojo to only compare the portions of the arrays that are different --->
+		<cfset OneLen=1+OneStop-OneStart>
+		<cfset TwoLen=1+TwoStop-TwoStart>
+		<cfset ArrayResize(LCS,OneLen+1)>
+		<!--- But first, we need to initialize our LCS array --->
+		<cfloop from="1" to="#IncrementValue(OneLen)#" index="i">
+			<cfset ArrayResize(LCS[i],TwoLen+1)>
+			<cfset LCS[i][TwoLen+1]=0>
+		</cfloop>
+		<cfloop from="1" to="#IncrementValue(TwoLen)#" index="j">
 			<cfset LCS[OneLen+1][j]=0>
 		</cfloop>
-		<!--- Don't forget the last cell of the last array! --->
 		<cfset LCS[OneLen+1][TwoLen+1]=0>
+		<cfset OneStart=OneStart-1>
+		<cfset TwoStart=TwoStart-1>
+		<!--- 
+		Worst algorithm ever!
+		TODO: Get a better algorithm!
+		Basically, walk backwards through both arrays, building a ranking of common substrings.
+		--->
 		<cfloop from="#OneLen#" to="1" index="i" step="-1">
 			<cfloop from="#TwoLen#" to="1" index="j" step="-1">
-				<cfif j EQ TwoLen>
-				</cfif>
-				<cfif One[i] EQ Two[j]>
+				<cfif One[i+OneStart] EQ Two[j+TwoStart]>
 					<cfset LCS[i][j]=LCS[i+1][j+1] + 1>
 				<cfelse>
 					<cfset LCS[i][j]=Max(LCS[i+1][j],LCS[i][j+1])>
 				</cfif>
 			</cfloop>
 		</cfloop>
-		<cfoutput>
-			<table border="1" cellpadding="3" cellspacing="0">
-				<tr>
-					<th>&nbsp;</th>
-					<th>&nbsp;</th>
-		</cfoutput>
-		<cfloop from="1" to="#OneLen#" index="i">
-			<cfoutput><th>#i#<br/>#HTMLEditFormat(Left(Arguments.First[i],8))#</th></cfoutput>
-		</cfloop>
-		<cfoutput>
-				</tr>
-		</cfoutput>
-		<cfloop from="1" to="#TwoLen#" index="j">
-			<cfoutput><tr><th>#j#</th><th>#HTMLEditFormat(Left(Arguments.Second[j],8))#</th></cfoutput>
-			<cfloop from="1" to="#OneLen#" index="i">
-				<cfoutput><td>#LCS[i][j]#</td></cfoutput>
-			</cfloop>
-			<cfoutput></tr></cfoutput>
-		</cfloop>
-		<cfoutput></table></cfoutput>
 		<cfset i=1>
 		<cfset j=1>
-		<!--- This is the most naive and unoptimized version of this algorithm. --->
-		<!--- TODO: Get a better algorithm --->
+		<!--- 
+		Now we walk back through the arrays, looking for the path with the maximum values (longest common substrings)
+		--->
 		<cfloop condition="(i LTE OneLen) AND (j LTE TwoLen)">
-			<cfif One[i] EQ Two[j]>
+			<cfif One[i+OneStart] EQ Two[j+TwoStart]>
 				<cfset i=i+1>
 				<cfset j=j+1>
 			<cfelseif LCS[i+1][j] GTE LCS[i][j+1]>
 				<cfset k=i>
 				<!--- Try to find additional deletions --->
-				<cfloop condition="(i LTE OneLen) AND (LCS[i+1][j] GTE LCS[i][j+1]) AND (One[i] NEQ Two[j])">
+				<cfloop condition="(i LTE OneLen) AND (LCS[i+1][j] GTE LCS[i][j+1]) AND (One[i+OneStart] NEQ Two[j+TwoStart])">
 					<cfset i=i+1>
 				</cfloop>
-				<cfset AddDifference(Result, this.OPERATION_DELETE, k, j, i-k)>
+				<cfset AddDifference(Result, this.OPERATION_DELETE, k+OneStart, j+TwoStart, i-k)>
 			<cfelse>
 				<cfset k=j>
 				<!--- Try to find additional deletions --->
-				<cfloop condition="(j LTE TwoLen) AND (LCS[i+1][j] LT LCS[i][j+1]) AND (One[i] NEQ Two[j])">
+				<cfloop condition="(j LTE TwoLen) AND (LCS[i+1][j] LT LCS[i][j+1]) AND (One[i+OneStart] NEQ Two[j+TwoStart])">
 					<cfset j=j+1>
 				</cfloop>
-				<cfset AddDifference(Result, this.OPERATION_INSERT, i, k, j-k)>
+				<cfset AddDifference(Result, this.OPERATION_INSERT, i+OneStart, k+TwoStart, j-k)>
 			</cfif>
 		</cfloop>
 		<!--- Catch any stragglers --->
 		<cfif (i LTE OneLen)>
-			<cfset AddDifference(Result, this.OPERATION_DELETE, i, j, OneLen - i + 1)>
+			<cfset AddDifference(Result, this.OPERATION_DELETE, i+OneStart, j+TwoStart, OneLen - i + 1)>
 		<cfelseif (j LTE TwoLen)>
-			<cfset AddDifference(Result, this.OPERATION_INSERT, i, j, TwoLen - j + 1)>
+			<cfset AddDifference(Result, this.OPERATION_INSERT, i+OneStart, j+TwoStart, TwoLen - j + 1)>
 		</cfif>
 		<cfreturn Result>
 	</cffunction>
@@ -149,7 +171,7 @@
 		<cfif FileExists(Arguments.First) AND FileExists(Arguments.Second)>
 			<cffile action="read" file="#Arguments.First#" variable="FirstFile">
 			<cffile action="read" file="#Arguments.Second#" variable="SecondFile">
-			<cfset Result=this.DiffArrays(ListToArray(FirstFile,Arguments.EndOfLine),ListToArray(SecondFile,Arguments.EndOfLine))>
+			<cfset Result=this.DiffArrays(ListToArray(FirstFile, Arguments.EndOfLine), ListToArray(SecondFile, Arguments.EndOfLine))>
 		</cfif>
 		<cfif NOT IsQuery(Result)>
 			<cfset Result=QueryNew(this.ResultColumnList())>
@@ -161,7 +183,7 @@
 		<cfargument name="First" type="string" required="true" />
 		<cfargument name="Second" type="string" required="true" />
 		<cfargument name="EndOfLine" type="string" default="#Chr(13)##Chr(10)#" required="false" />
-		<cfreturn this.DiffArrays(ListToArray(Arguments.First,Arguments.EndOfLine),ListToArray(Arguments.Second,Arguments.EndOfLine))>
+		<cfreturn this.DiffArrays(ListToArray(Arguments.First, Arguments.EndOfLine), ListToArray(Arguments.Second, Arguments.EndOfLine))>
 	</cffunction>
 
 	<cffunction name="DiffStructs" hint="Compute the differences between two structures" access="public" output="false" returntype="query">
