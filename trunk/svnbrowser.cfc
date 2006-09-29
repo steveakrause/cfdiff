@@ -34,7 +34,13 @@
 		<cfset var i="">
 		<cfset var f="">
 		<cfset var u="">
-		<cfset var NodeKind=this.Repository.checkPath(JavaCast("string",Arguments.Resource),JavaCast("int",-1))>
+		<cfset var NodeKind="">
+		<cftry>
+			<cfset NodeKind=this.Repository.checkPath(JavaCast("string",Arguments.Resource),JavaCast("int",-1))>
+			<cfcatch>
+				<cfset NodeKind=this.Repository.checkPath(JavaCast("string",Arguments.Resource),JavaCast("int",-1))>
+			</cfcatch>
+		</cftry>
 		<cfif NodeKind EQ NodeKind.DIR>
 			<cfset this.Repository.getDir(JavaCast("string",Arguments.Resource),JavaCast("int",-1),false,ent)>
 			<cfset i=ent.iterator()>
@@ -68,7 +74,13 @@
 		<cfset var props=CreateObject("java","java.util.HashMap").init(16)>
 		<cfset var out=CreateObject("java","java.io.ByteArrayOutputStream").init()>
 		<cfset var MimeType="">
-		<cfset var NodeKind=this.Repository.checkPath(JavaCast("string",Arguments.Resource),JavaCast("int",Arguments.Version))>
+		<cfset var NodeKind="">
+		<cftry>
+			<cfset NodeKind=this.Repository.checkPath(JavaCast("string",Arguments.Resource),JavaCast("int",Arguments.Version))>
+			<cfcatch>
+				<cfset NodeKind=this.Repository.checkPath(JavaCast("string",Arguments.Resource),JavaCast("int",Arguments.Version))>
+			</cfcatch>
+		</cftry>
 		<cfif NodeKind.compareTo(NodeKind.FILE) EQ 0>
 			<cfset this.Repository.getFile(JavaCast("string",Arguments.Resource),JavaCast("int",Arguments.Version),props,out)>
 			<cfset QueryAddRow(Q)>
@@ -94,7 +106,13 @@
 		<cfset var f="">
 		<cfset var u="">
 		<cfset var lastRev=-1>
-		<cfset var NodeKind=this.Repository.checkPath(JavaCast("string",Arguments.Resource),JavaCast("int",lastRev))>
+		<cfset var NodeKind="">
+		<cftry>
+			<cfset var NodeKind=this.Repository.checkPath(JavaCast("string",Arguments.Resource),JavaCast("int",lastRev))>
+			<cfcatch>
+				<cfset var NodeKind=this.Repository.checkPath(JavaCast("string",Arguments.Resource),JavaCast("int",lastRev))>
+			</cfcatch>
+		</cftry>
 		<cfif NodeKind.compareTo(NodeKind.FILE) EQ 0>
 			<cfset u=ArrayNew(1)>
 			<cfset ArrayAppend(u,arguments.resource)>

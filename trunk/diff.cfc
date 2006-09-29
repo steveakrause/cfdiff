@@ -246,21 +246,49 @@
 	</cffunction>
 	
 	<cffunction name="UnifiedDiffArrays" access="public" output="false" returntype="query">
+		<cfargument name="Differences" type="query" required="true" />
 		<cfargument name="First" type="array" required="true" />
 		<cfargument name="Second" type="array" required="true" />
 		<cfargument name="Context" type="numeric" required="false" default="3" />
-		<cfset var Result=QueryNew("Operation,AtFirst,AtSecond,Value")>
-		<cfset var Differences=Diff(Arguments.First,Arguments.Second)>
-		<cfset var LastOne=1>
-		<cfset var LastTwo=1>
-		<cfif Differences.RecordCount GT 0>
-			<cfloop query="Differences">
-				<cfif Differences.Operation EQ this.OPERATION_INSERT>
-				<cfelseif Differences.Operation EQ this.OPERATION_DELETE>
-				<cfelseif Differences.Operation EQ this.OPERATION_UPDATE>
-				</cfif>
+		<cfset var P=Parallelize(Arguments.Differences, Arguments.First, Arguments.Second)>
+		<cfset var Result=QueryNew(ListAppend(P.ColumnList,"Edge"))>
+		<cfset var Want=StructNew()>
+		<cfset var Rows=ArrayNew(1)>
+		<cfset var R="">
+		<cfset var C="">
+		<cfloop query="P">
+			<cfif P.Operation NEQ "">
+				<cfloop from="#Max(1,P.CurrentRow-Arguments.Context)#" to="#Min(P.RecordCount,P.CurrentRow+Arguments.Context)#" index="R">
+					<cfif NOT StructKeyExists(Want,R)>
+						<cfset ArrayAppend(Rows,R)>
+						<cfset Want[R]=1>
+					</cfif>
+				</cfloop>
+			</cfif>
+		</cfloop>
+		<cfloop from="1" to="#ArrayLen(Rows)#" index="R">
+			<cfset QueryAddRow(Result)>
+			<cfloop list="#P.ColumnList#" index="C">
+				<cfset Result[C][Result.RecordCount]=P[C][Rows[R]]>
 			</cfloop>
-		</cfif>
+			<cfif (R EQ 1) AND (R EQ ArrayLen(Rows))>
+				<cfset Result.Edge[Result.RecordCount]="only">
+			<cfelseif (R EQ 1) AND (Rows[R] EQ Rows[R+1]-1)>
+				<cfset Result.Edge[Result.RecordCount]="top">
+			<cfelseif (R EQ 1)>
+				<cfset Result.Edge[Result.RecordCount]="whole">
+			<cfelseif (R EQ ArrayLen(Rows)) AND (Rows[R-1]+1 EQ Rows[R])>
+				<cfset Result.Edge[Result.RecordCount]="bottom">
+			<cfelseif (R EQ ArrayLen(Rows))>
+				<cfset Result.Edge[Result.RecordCount]="whole">
+			<cfelseif (Rows[R-1]+1 EQ Rows[R+1]-1)>
+				<cfset Result.Edge[Result.RecordCount]="middle">
+			<cfelseif (Rows[R-1]+1 EQ Rows[R])>
+				<cfset Result.Edge[Result.RecordCount]="bottom">
+			<cfelseif (Rows[R] EQ Rows[R+1]-1)>
+				<cfset Result.Edge[Result.RecordCount]="top">
+			</cfif>
+		</cfloop>
 		<cfreturn Result>
 	</cffunction>
 	

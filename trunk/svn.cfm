@@ -17,6 +17,7 @@
 </cflock>
 <cfset Version="">
 <cfset PrevVersion="">
+<cfset FullDiff=false>
 <!--- Request URLs will look like: /svn.cfm/org/rickosborne/diff.cfc:12:25 --->
 <cfset FilePath=REReplace(REReplace(CGI.PATH_INFO,"[.][.]+",".","ALL"),"[/][/]+","/","ALL")>
 <cfif FilePath CONTAINS ":">
@@ -26,6 +27,10 @@
 		<!--- There's a left/right pair of revision numbers --->
 		<cfset PrevVersion=ListFirst(Version,":")>
 		<cfset Version=ListRest(Version,":")>
+		<cfif Right(Version,1) EQ "f">
+			<cfset FullDiff=true>
+			<cfset Version=Val(Version)>
+		</cfif>
 	</cfif>
 	<cfset FilePath=ListFirst(FilePath,":")>
 </cfif>
@@ -55,7 +60,11 @@
 		<!--- We got two files, build a diff --->
 		<cfset LeftFile=ListToArray(ToString(LeftQ.Content[1]),Chr(10))>
 		<cfset RightFile=ListToArray(ToString(RightQ.Content[1]),Chr(10))>
-		<cfset f=Differ.Parallelize(Differ.DiffArrays(LeftFile,RightFile),LeftFile,RightFile)>
+		<cfif FullDiff>
+			<cfset f=Differ.Parallelize(Differ.DiffArrays(LeftFile,RightFile),LeftFile,RightFile)>
+		<cfelse>
+			<cfset f=Differ.UnifiedDiffArrays(Differ.DiffArrays(LeftFile,RightFile),LeftFile,RightFile)>
+		</cfif>
 	<cfelse>
 		<!--- Yeah, we should probably show an error message or something --->
 		<cfset LeftFile="">
@@ -135,7 +144,9 @@
 	<cfset OpCounts["-"]=0>
 	<cfset OpCounts["!"]=0>
 	<cfset OpCounts[""]=0>
+	<cfset Edge="">
 	<cfoutput>
+	<p>You may also view the <cfif FullDiff><a href="#CGI.SCRIPT_NAME##Left(CGI.PATH_INFO,Len(CGI.PATH_INFO)-1)#">unified diff</a><cfelse><a href="#CGI.SCRIPT_NAME##CGI.PATH_INFO#f">full diff</a></cfif>.</p>
 	<table class="diff" cellspacing="0">
 		<tr>
 			<th class="linenum" style="border-right:none;border-bottom:none;">&nbsp;</th>
@@ -143,8 +154,9 @@
 			<th class="linenum" style="border-right:none;border-bottom:none;">&nbsp;</th>
 			<th nowrap="nowrap" style="border-left:none;">Revision #NumberFormat(Version)#</th>
 		</tr>
-	<cfloop query="f"><cfset OpCounts[Operation]=OpCounts[Operation]+1>
-		<tr>
+	<cfloop query="f">
+		<cfset OpCounts[Operation]=OpCounts[Operation]+1>
+		<tr class="#Edge#">
 			<td class="linenum"><cfif IsNumeric(AtFirst)>#NumberFormat(AtFirst)#<cfelse>&nbsp;</cfif></td>
 			<td class="code<cfif Operation NEQ '+'> #OpClasses[Operation]#</cfif>"><div><cfif Len(ValueFirst) GT 0>#Replace(HTMLEditFormat(ValueFirst),Chr(9),"&nbsp;&nbsp;&nbsp;","ALL")#<cfelse>&nbsp;</cfif></div></td>
 			<td class="linenum"><cfif IsNumeric(AtSecond)>#NumberFormat(AtSecond)#<cfelse>&nbsp;</cfif></td>
