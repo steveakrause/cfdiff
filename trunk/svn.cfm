@@ -40,7 +40,7 @@
 <cfset TotalFiles=0>
 <cfset TotalDirs=0>
 <!--- We don't want to provide the ability to diff everything, just certain file types --->
-<cfset Diffable="cfc,cfm,cfml,txt,plx,php,php4,php5,asp,aspx,xml,html,htm,sql">
+<cfset Diffable="cfc,cfm,cfml,txt,plx,php,php4,php5,asp,aspx,xml,html,htm,sql,css,js">
 <cfset EvenOdd=ListToArray("even,odd")>
 <cfset IsDiff=false>
 <cfif IsDir>
