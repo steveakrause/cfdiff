@@ -108,9 +108,9 @@
 		<cfset var lastRev=-1>
 		<cfset var NodeKind="">
 		<cftry>
-			<cfset var NodeKind=this.Repository.checkPath(JavaCast("string",Arguments.Resource),JavaCast("int",lastRev))>
+			<cfset NodeKind=this.Repository.checkPath(JavaCast("string",Arguments.Resource),JavaCast("int",lastRev))>
 			<cfcatch>
-				<cfset var NodeKind=this.Repository.checkPath(JavaCast("string",Arguments.Resource),JavaCast("int",lastRev))>
+				<cfset NodeKind=this.Repository.checkPath(JavaCast("string",Arguments.Resource),JavaCast("int",lastRev))>
 			</cfcatch>
 		</cftry>
 		<cfif NodeKind.compareTo(NodeKind.FILE) EQ 0>
