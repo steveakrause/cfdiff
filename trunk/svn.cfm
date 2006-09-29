@@ -9,12 +9,15 @@
 	Yes, yes, I know.  Horrific caffeine code.  I bow down.  I'm so ashamed.
 --->
 
+<cfset Application.SVNBrowser=CreateObject("component","svnbrowser").init("http://cfdiff.googlecode.com/svn/","","")>
 <cflock scope="APPLICATION" type="EXCLUSIVE" timeout="30">
 	<cfif NOT StructKeyExists(Application,"SVNBrowser")>
-		<cfset Application.SVNBrowser=CreateObject("component","org.rickosborne.svnbrowser").init("http://cfdiff.googlecode.com/svn/trunk/","","")>
+		<cfset Application.SVNBrowser=CreateObject("component","svnbrowser").init("http://cfdiff.googlecode.com/svn/trunk/","","")>
 	</cfif>
 	<cfset sb=Application.SVNBrowser>
 </cflock>
+<cfset Version="">
+<cfset PrevVersion="">
 <!--- Request URLs will look like: /svn.cfm/org/rickosborne/diff.cfc:12:25 --->
 <cfset FilePath=REReplace(REReplace(CGI.PATH_INFO,"[.][.]+",".","ALL"),"[/][/]+","/","ALL")>
 <cfif FilePath CONTAINS ":">
@@ -27,6 +30,7 @@
 	</cfif>
 	<cfset FilePath=ListFirst(FilePath,":")>
 </cfif>
+<cfset IsDir=False>
 <cfif FilePath EQ "">
 	<cfset FilePath="/">
 </cfif>
@@ -36,9 +40,6 @@
 <cfset TotalBytes=0>
 <cfset TotalFiles=0>
 <cfset TotalDirs=0>
-<cfset IsDir=False>
-<cfset Version="">
-<cfset PrevVersion="">
 <!--- We don't want to provide the ability to diff everything, just certain file types --->
 <cfset Diffable="cfc,cfm,cfml,txt,plx,php,php4,php5,asp,aspx,xml,html,htm,sql">
 <cfset EvenOdd=ListToArray("even,odd")>
@@ -50,7 +51,7 @@
 	<!--- If we have two revision numbers, make a diff --->
 	<cfset LeftQ=sb.FileVersion(FilePath,PrevVersion)>
 	<cfset RightQ=sb.FileVersion(FilePath,Version)>
-	<cfset Differ=CreateObject("component","org.rickosborne.diff")>
+	<cfset Differ=CreateObject("component","diff")>
 	<cfif IsQuery(LeftQ) AND IsQuery(RightQ) AND (LeftQ.RecordCount EQ 1) AND (RightQ.RecordCount EQ 1) AND IsBinary(LeftQ.Content[1]) AND IsBinary(RightQ.Content[1])>
 		<!--- We got two files, build a diff --->
 		<cfset LeftFile=ListToArray(ToString(LeftQ.Content[1]),Chr(10))>
@@ -97,12 +98,15 @@
 	<!--- If all else fails, try to show a history of whatever we're looking at --->
 	<cfset f=sb.History(FilePath)>
 </cfif>
-
-<!--- Insert generic header here --->
-<cfmodule template="_header.cfm" subtitle="Home">
-
 <cfoutput>
-<h1>SMART Source Repository Revisions</h1>
+<html>
+<head>
+<title>cfdiff Subversion Browser</title>
+<base href="http<cfif CGI.SERVER_PORT EQ 443>s</cfif>://#CGI.SERVER_NAME##CGI.SCRIPT_NAME#" />
+<link rel="stylesheet" href="cfdiff.css" type="text/css" />
+</head>
+<body>
+<h1>cfdiff Subversion Browser</h1>
 <h2>Path: #HTMLEditFormat(FilePath)#</h2>
 </cfoutput>
 
@@ -129,9 +133,9 @@
 	<cfloop query="f"><cfset OpCounts[Operation]=OpCounts[Operation]+1>
 		<tr>
 			<td class="linenum"><cfif IsNumeric(AtFirst)>#NumberFormat(AtFirst)#<cfelse>&nbsp;</cfif></td>
-			<td class="code<cfif Operation NEQ '+'> #OpClasses[Operation]#</cfif>"><div>#Replace(HTMLEditFormat(ValueFirst),Chr(9),"&nbsp;&nbsp;&nbsp;","ALL")#</div></td>
+			<td class="code<cfif Operation NEQ '+'> #OpClasses[Operation]#</cfif>"><div><cfif Len(ValueFirst) GT 0>#Replace(HTMLEditFormat(ValueFirst),Chr(9),"&nbsp;&nbsp;&nbsp;","ALL")#<cfelse>&nbsp;</cfif></div></td>
 			<td class="linenum"><cfif IsNumeric(AtSecond)>#NumberFormat(AtSecond)#<cfelse>&nbsp;</cfif></td>
-			<td class="code<cfif Operation NEQ '-'> #OpClasses[Operation]#</cfif>"><div>#Replace(HTMLEditFormat(ValueSecond),Chr(9),"&nbsp;&nbsp;&nbsp;","ALL")#</div></td>
+			<td class="code<cfif Operation NEQ '-'> #OpClasses[Operation]#</cfif>"><div><cfif Len(ValueSecond) GT 0>#Replace(HTMLEditFormat(ValueSecond),Chr(9),"&nbsp;&nbsp;&nbsp;","ALL")#<cfelse>&nbsp;</cfif></div></td>
 		</tr>
 	</cfloop>
 	</table>
@@ -147,14 +151,14 @@
 <cfelse>
 	<!--- Show our generic file list or history list --->
 	<cfoutput>
-<table border="0" width="100%" class="list adminlist">
+<table border="0" width="100%" class="list">
 	<thead>
 	<tr>
 	<cfif IsDir><th align="left">Name</th></cfif>
 	<th align="right">Revision</th>
 	<cfif NOT IsDir><th align="center">Diff</th></cfif>
 	<cfif IsDir><th align="right">Size</th></cfif>
-	<th align="left">Date</th>
+	<th align="center">Date</th>
 	<th align="left">Author</th>
 	<cfif NOT IsDir><th align="left">Message</th></cfif>
 	</tr>
@@ -191,7 +195,8 @@
 </cfoutput>
 </cfif>
 
-<!--- Yet another generic footer --->
-<cfmodule template="_footer.cfm">
-
+<cfoutput>
+</body>
+</html>
+</cfoutput>
 <cfsetting enablecfoutputonly="No">
