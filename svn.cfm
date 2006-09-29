@@ -1,54 +1,73 @@
 <cfsetting enablecfoutputonly="Yes">
 <!---
 	svn browser
+	Original Code by Rick Osborne
+
+	License: Mozilla Public License (MPL) version 1.1 - http://www.mozilla.org/MPL/
+	READ THE LICENSE BEFORE YOU USE OR MODIFY THIS CODE
+	
+	Yes, yes, I know.  Horrific caffeine code.  I bow down.  I'm so ashamed.
 --->
 
-<cfset FilePath=REReplace(REReplace(CGI.PATH_INFO,"[.][.]+",".","ALL"),"[/][/]+","/","ALL")>
-<cfif FilePath EQ ""><cfset FilePath="/"></cfif>
-<cfset Application.SVNBrowser=CreateObject("component","org.rickosborne.svnbrowser").init("http://forecast1/svnread/forecast1/","","")>
 <cflock scope="APPLICATION" type="EXCLUSIVE" timeout="30">
 	<cfif NOT StructKeyExists(Application,"SVNBrowser")>
-		<cfset Application.SVNBrowser=CreateObject("component","org.rickosborne.svnbrowser").init("http://forecast1/svnread/forecast1/","","")>
+		<cfset Application.SVNBrowser=CreateObject("component","org.rickosborne.svnbrowser").init("http://cfdiff.googlecode.com/svn/trunk/","","")>
 	</cfif>
 	<cfset sb=Application.SVNBrowser>
 </cflock>
+<!--- Request URLs will look like: /svn.cfm/org/rickosborne/diff.cfc:12:25 --->
+<cfset FilePath=REReplace(REReplace(CGI.PATH_INFO,"[.][.]+",".","ALL"),"[/][/]+","/","ALL")>
+<cfif FilePath CONTAINS ":">
+	<!--- There is at least one revision number given --->
+	<cfset Version=ListRest(FilePath,":")>
+	<cfif Version CONTAINS ":">
+		<!--- There's a left/right pair of revision numbers --->
+		<cfset PrevVersion=ListFirst(Version,":")>
+		<cfset Version=ListRest(Version,":")>
+	</cfif>
+	<cfset FilePath=ListFirst(FilePath,":")>
+</cfif>
+<cfif FilePath EQ "">
+	<cfset FilePath="/">
+</cfif>
+<cfif Right(FilePath,1) EQ "/">
+	<cfset IsDir=True>
+</cfif>
 <cfset TotalBytes=0>
 <cfset TotalFiles=0>
 <cfset TotalDirs=0>
 <cfset IsDir=False>
 <cfset Version="">
 <cfset PrevVersion="">
+<!--- We don't want to provide the ability to diff everything, just certain file types --->
 <cfset Diffable="cfc,cfm,cfml,txt,plx,php,php4,php5,asp,aspx,xml,html,htm,sql">
-<cfif FilePath CONTAINS ":">
-	<cfset Version=ListRest(FilePath,":")>
-	<cfif Version CONTAINS ":">
-		<cfset PrevVersion=ListFirst(Version,":")>
-		<cfset Version=ListRest(Version,":")>
-	</cfif>
-	<cfset FilePath=ListFirst(FilePath,":")>
-</cfif>
-<cfif Right(FilePath,1) EQ "/"><cfset IsDir=True></cfif>
 <cfset EvenOdd=ListToArray("even,odd")>
 <cfset IsDiff=false>
 <cfif IsDir>
+	<!--- Get a directory listing --->
 	<cfset f=sb.List(FilePath)>
 <cfelseif IsNumeric(PrevVersion) AND IsNumeric(Version)>
+	<!--- If we have two revision numbers, make a diff --->
 	<cfset LeftQ=sb.FileVersion(FilePath,PrevVersion)>
 	<cfset RightQ=sb.FileVersion(FilePath,Version)>
 	<cfset Differ=CreateObject("component","org.rickosborne.diff")>
 	<cfif IsQuery(LeftQ) AND IsQuery(RightQ) AND (LeftQ.RecordCount EQ 1) AND (RightQ.RecordCount EQ 1) AND IsBinary(LeftQ.Content[1]) AND IsBinary(RightQ.Content[1])>
+		<!--- We got two files, build a diff --->
 		<cfset LeftFile=ListToArray(ToString(LeftQ.Content[1]),Chr(10))>
 		<cfset RightFile=ListToArray(ToString(RightQ.Content[1]),Chr(10))>
 		<cfset f=Differ.Parallelize(Differ.DiffArrays(LeftFile,RightFile),LeftFile,RightFile)>
 	<cfelse>
+		<!--- Yeah, we should probably show an error message or something --->
 		<cfset LeftFile="">
 		<cfset RightFile="">
 		<cfset f=QueryNew(Differ.ResultColumnList)>
 	</cfif>
 	<cfset IsDiff=true>
 <cfelseif IsNumeric(Version)>
+	<!--- We only have one version number, so show the file --->
 	<cfset f=sb.FileVersion(FilePath,Version)>
 	<cfif f.RecordCount GT 0>
+		<!--- Arcane mojo to return a byte array.  Hella lame. --->
 		<cfset PageContext=getPageContext()>
 		<cfset PageContext.setFlushOutput(false)>
 		<cfset Response=PageContext.getResponse().getResponse()>
@@ -75,9 +94,11 @@
 	</cfif>
 	<cfabort>
 <cfelse>
+	<!--- If all else fails, try to show a history of whatever we're looking at --->
 	<cfset f=sb.History(FilePath)>
 </cfif>
 
+<!--- Insert generic header here --->
 <cfmodule template="_header.cfm" subtitle="Home">
 
 <cfoutput>
@@ -86,6 +107,7 @@
 </cfoutput>
 
 <cfif IsDiff>
+	<!--- Keep track of line counts, and provide a quick translation for operations to class names --->
 	<cfset OpClasses=StructNew()>
 	<cfset OpClasses["+"]="ins">
 	<cfset OpClasses["-"]="del">
@@ -123,8 +145,8 @@
 	</table>
 	</cfoutput>
 <cfelse>
+	<!--- Show our generic file list or history list --->
 	<cfoutput>
-<p>Diffable: #Diffable#</p>
 <table border="0" width="100%" class="list adminlist">
 	<thead>
 	<tr>
@@ -169,6 +191,7 @@
 </cfoutput>
 </cfif>
 
+<!--- Yet another generic footer --->
 <cfmodule template="_footer.cfm">
 
 <cfsetting enablecfoutputonly="No">

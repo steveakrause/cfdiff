@@ -1,4 +1,11 @@
 <cfcomponent displayname="svnbrowser" output="false" namespace="org.rickosborne" hint="Subversion Repository Browser">
+	<!---
+	svn browser
+	Original Code by Rick Osborne
+
+	License: Mozilla Public License (MPL) version 1.1 - http://www.mozilla.org/MPL/
+	READ THE LICENSE BEFORE YOU USE OR MODIFY THIS CODE
+	--->
 	<cffunction name="init" output="true" returntype="svnbrowser" description="Initialize our object" displayname="init">
 		<cfargument name="RepositoryURL" type="string" required="true">
 		<cfargument name="Username" type="string" required="false" default="">
@@ -24,7 +31,6 @@
 		<cfargument name="Resource" type="string" required="true">
 		<cfset var Q=QueryNew("Name,Author,Message,Date,Kind,Path,Revision,Size,URL,Content")>
 		<cfset var ent=CreateObject("java","java.util.LinkedHashSet").init(16)>
-		<cfset var props=CreateObject("java","java.util.HashMap").init(16)>
 		<cfset var i="">
 		<cfset var f="">
 		<cfset var u="">
@@ -88,7 +94,7 @@
 		<cfset var f="">
 		<cfset var u="">
 		<cfset var lastRev=-1>
-		<cfset var NodeKind=this.Repository.checkPath(JavaCast("string",Arguments.Resource),JavaCast("int",-1))>
+		<cfset var NodeKind=this.Repository.checkPath(JavaCast("string",Arguments.Resource),JavaCast("int",lastRev))>
 		<cfif NodeKind.compareTo(NodeKind.FILE) EQ 0>
 			<cfset u=ArrayNew(1)>
 			<cfset ArrayAppend(u,arguments.resource)>
