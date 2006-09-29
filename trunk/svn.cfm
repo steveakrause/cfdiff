@@ -109,6 +109,20 @@
 <h2>Path: #HTMLEditFormat(FilePath)#</h2>
 </cfoutput>
 
+<cffunction name="FreshnessRating" returntype="string" output="false">
+	<cfargument name="Updated" type="any" required="true">
+	<cfset var Age=99>
+	<cfif IsDate(Arguments.Updated)>
+		<cfset Age=DateDiff("d",Arguments.Updated,Now())>
+	</cfif>
+	<cfif Age LTE 2><cfreturn "smokin">
+	<cfelseif Age LTE 5><cfreturn "hot">
+	<cfelseif Age LTE 10><cfreturn "fresh">
+	<cfelseif Age LTE 30><cfreturn "fine">
+	</cfif>
+	<cfreturn "aged">
+</cffunction>
+
 <cfif IsDiff>
 	<!--- Keep track of line counts, and provide a quick translation for operations to class names --->
 	<cfset OpClasses=StructNew()>
@@ -174,7 +188,7 @@
 		<td nowrap="nowrap" class="num"><cfif IsDir>#NumberFormat(Revision)#<cfelse><a href="#CGI.SCRIPT_NAME##Path#:#Revision#">#NumberFormat(Revision)#</a></cfif></td>
 		<cfif NOT IsDir><td align="center"><cfif CanDiff AND (CurrentRow LT RecordCount)><a href="#CGI.SCRIPT_NAME##Path#:#f.Revision[IncrementValue(CurrentRow)]#:#Revision#"><img src="diff.png" width="16" width="16" alt="View the difference between this file and the previous version" border="0" /></a><cfelse>&nbsp;</cfif></td></cfif>
 		<cfif IsDir><td nowrap="nowrap" class="num"><cfif (Kind EQ 'file') AND IsNumeric(Size)>#NumberFormat(Size)#</cfif></td></cfif>
-		<td class="date" nowrap="nowrap"><cfif IsDate(Date)>#DateFormat(Date,"yyyy-mm-dd")# #TimeFormat(Date,"HH:mm:ss")#<cfelse>#HTMLEditFormat(Date)#</cfif></td>
+		<td class="date<cfif IsDate(Date)> #FreshnessRating(Date)#</cfif>" nowrap="nowrap"><cfif IsDate(Date)>#DateFormat(Date,"yyyy-mm-dd")# #TimeFormat(Date,"HH:mm:ss")#<cfelse>#HTMLEditFormat(Date)#</cfif></td>
 		<td>#HTMLEditFormat(Author)#</td>
 		<cfif NOT IsDir><td>#HTMLEditFormat(Message)#</td></cfif>
 	</tr>

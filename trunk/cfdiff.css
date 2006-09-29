@@ -24,6 +24,11 @@ h2 {
 .list { border: 1px solid #999; }
 .list th, .list td { padding: 2px; }
 .list th, .list tfoot tr { background-color: #ddd; }
+.list .smokin { color: #f00; }
+.list .hot { color: #c00; }
+.list .fresh { color: #c80; }
+.list .fine { color: #440; }
+.list .aged { color: #666; }
 .even { background-color: #eee; }
 .diff { font-family: 'Bitstream Vera Sans Mono', 'Bitstream Vera Mono', 'Vera Mono', 'Vera Sans Mono', 'Lucida Console', 'Lucida Typewriter', monospace, fixed-width, fixed; font-size: 0.9em; }
 .diff .ins { background-color: #dfd; }
