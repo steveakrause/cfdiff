@@ -27,7 +27,7 @@
 		</cfif>
 		<cfreturn this>
 	</cffunction>
-	<cffunction name="List" output="true" description="Retrieve a list of children for a resource" returntype="query">
+	<cffunction name="List" output="false" description="Retrieve a list of children for a resource" returntype="query">
 		<cfargument name="Resource" type="string" required="true">
 		<cfset var Q=QueryNew("Name,Author,Message,Date,Kind,Path,Revision,Size,URL,Content")>
 		<cfset var ent=CreateObject("java","java.util.LinkedHashSet").init(16)>

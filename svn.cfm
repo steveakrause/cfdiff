@@ -9,7 +9,6 @@
 	Yes, yes, I know.  Horrific caffeine code.  I bow down.  I'm so ashamed.
 --->
 
-<cfset Application.SVNBrowser=CreateObject("component","svnbrowser").init("http://cfdiff.googlecode.com/svn/","","")>
 <cflock scope="APPLICATION" type="EXCLUSIVE" timeout="30">
 	<cfif NOT StructKeyExists(Application,"SVNBrowser")>
 		<cfset Application.SVNBrowser=CreateObject("component","svnbrowser").init("http://cfdiff.googlecode.com/svn/trunk/","","")>
