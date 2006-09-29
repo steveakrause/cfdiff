@@ -1,0 +1,39 @@
+html, body {
+	padding: 8px;
+	background-color: white;
+	color: black;
+	font-size: 1em;
+}
+h1 {
+	margin: -24px -24px 0px -24px;
+	padding: 8px;
+	color: #def;
+	background-color: #248;
+	border-bottom: 1px dashed #acf;
+	font-size: 2em;
+}
+h2 {
+	margin: 0px -24px 8px -24px;
+	padding: 4px 8px;
+	border: 1px solid #248;
+	border-top: none;
+	background-color: #48f;
+	color: #def;
+	font-size: 1.5em;
+}
+.list { border: 1px solid #999; }
+.list th, .list td { padding: 2px; }
+.list th, .list tfoot tr { background-color: #ddd; }
+.even { background-color: #eee; }
+.diff { font-family: 'Bitstream Vera Sans Mono', 'Bitstream Vera Mono', 'Vera Mono', 'Vera Sans Mono', 'Lucida Console', 'Lucida Typewriter', monospace, fixed-width, fixed; font-size: 0.9em; }
+.diff .ins { background-color: #dfd; }
+.diff .del { background-color: #fdd; }
+.diff .upd { background-color: #ddf; }
+.diff .code { width: 50%; }
+.diff .code div { overflow: hidden; }
+.diff td, .diff tr { vertical-align: top; }
+.diff .linenum { font-size: 0.8em; background-color: #eee; border-left: 1px solid #ddd; border-right: 1px solid #ddd; text-align: right; color: #999; }
+.diff th { background-color: #eee; border: 1px solid #ddd; border-left: none; }
+a { color: blue; }
+.num { text-align: right; }
+.date { text-align: center; }
