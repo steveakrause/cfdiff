@@ -9,9 +9,32 @@
 	Yes, yes, I know.  Horrific caffeine code.  I bow down.  I'm so ashamed.
 --->
 
+<!---
+===============================================================
+  BEGIN SITE-SPECIFIC SETTINGS
+===============================================================
+--->
+
+<cfset RepositoryURL="http://cfdiff.googlecode.com/svn/trunk/">
+<!--- Most of the time, you won't need a username/password for read-only access --->
+<cfset RepositoryUsername="">
+<cfset RepositoryPassword="">
+<cfset PageTitle="cfdiff Subversion Browser">
+<cfset StyleSheet="cfdiff.css">
+<cfset DiffGraphic='<img src="diff.png" width="16" width="16" alt="View the difference between this file and the previous version" border="0" />'>
+<!--- We don't want to provide the ability to diff everything, just certain file types --->
+<cfset Diffable="cfc,cfm,cfml,txt,plx,php,php4,php5,asp,aspx,xml,html,htm,sql,css,js">
+
+<!---
+===============================================================
+  END SITE-SPECIFIC SETTINGS
+===============================================================
+--->
+<!--- You *probably* won't have to edit anything below this line --->
+
 <cflock scope="APPLICATION" type="EXCLUSIVE" timeout="30">
 	<cfif NOT StructKeyExists(Application,"SVNBrowser")>
-		<cfset Application.SVNBrowser=CreateObject("component","svnbrowser").init("http://cfdiff.googlecode.com/svn/trunk/","","")>
+		<cfset Application.SVNBrowser=CreateObject("component","svnbrowser").init(RepositoryURL,RepositoryUsername,RepositoryPassword)>
 	</cfif>
 	<cfset sb=Application.SVNBrowser>
 </cflock>
@@ -44,8 +67,6 @@
 <cfset TotalBytes=0>
 <cfset TotalFiles=0>
 <cfset TotalDirs=0>
-<!--- We don't want to provide the ability to diff everything, just certain file types --->
-<cfset Diffable="cfc,cfm,cfml,txt,plx,php,php4,php5,asp,aspx,xml,html,htm,sql,css,js">
 <cfset EvenOdd=ListToArray("even,odd")>
 <cfset IsDiff=false>
 <cfif IsDir>
@@ -106,15 +127,16 @@
 	<!--- If all else fails, try to show a history of whatever we're looking at --->
 	<cfset f=sb.History(FilePath)>
 </cfif>
+
 <cfoutput>
 <html>
 <head>
-<title>cfdiff Subversion Browser</title>
+<title>#PageTitle#</title>
 <base href="http<cfif CGI.SERVER_PORT EQ 443>s</cfif>://#CGI.SERVER_NAME##CGI.SCRIPT_NAME#" />
-<link rel="stylesheet" href="cfdiff.css" type="text/css" />
+<cfif StyleSheet NEQ ""><link rel="stylesheet" href="#StyleSheet#" type="text/css" /></cfif>
 </head>
 <body>
-<h1>cfdiff Subversion Browser</h1>
+<h1>#PageTitle#</h1>
 <h2>Path: #HTMLEditFormat(FilePath)#</h2>
 </cfoutput>
 
@@ -198,7 +220,7 @@
 	<tr class="#EvenOdd[IncrementValue(CurrentRow MOD 2)]#" valign="top">
 		<cfif IsDir><td><a href="#CGI.SCRIPT_NAME#/#URL#<cfif Kind EQ 'dir'>/</cfif>">#HTMLEditFormat(Name)#</a></td></cfif>
 		<td nowrap="nowrap" class="num"><cfif IsDir>#NumberFormat(Revision)#<cfelse><a href="#CGI.SCRIPT_NAME##Path#:#Revision#">#NumberFormat(Revision)#</a></cfif></td>
-		<cfif NOT IsDir><td align="center"><cfif CanDiff AND (CurrentRow LT RecordCount)><a href="#CGI.SCRIPT_NAME##Path#:#f.Revision[IncrementValue(CurrentRow)]#:#Revision#"><img src="diff.png" width="16" width="16" alt="View the difference between this file and the previous version" border="0" /></a><cfelse>&nbsp;</cfif></td></cfif>
+		<cfif NOT IsDir><td align="center"><cfif CanDiff AND (CurrentRow LT RecordCount)><a href="#CGI.SCRIPT_NAME##Path#:#f.Revision[IncrementValue(CurrentRow)]#:#Revision#">#DiffGraphic#</a><cfelse>&nbsp;</cfif></td></cfif>
 		<cfif IsDir><td nowrap="nowrap" class="num"><cfif (Kind EQ 'file') AND IsNumeric(Size)>#NumberFormat(Size)#</cfif></td></cfif>
 		<td class="date<cfif IsDate(Date)> #FreshnessRating(Date)#</cfif>" nowrap="nowrap"><cfif IsDate(Date)>#DateFormat(Date,"yyyy-mm-dd")# #TimeFormat(Date,"HH:mm:ss")#<cfelse>#HTMLEditFormat(Date)#</cfif></td>
 		<td>#HTMLEditFormat(Author)#</td>
