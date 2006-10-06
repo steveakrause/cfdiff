@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute">
+	<mx:states>
+		<mx:State name="DirBrowse">
+			<mx:RemoveChild target="{Splash}"/>
+			<mx:AddChild position="lastChild">
+				<mx:VDividedBox id="vBrowserBox" top="56" left="10" right="10" bottom="10">
+					<mx:HDividedBox id="hdividedbox1" width="100%" height="100%">
+						<mx:Tree height="100%" id="tree1"></mx:Tree>
+						<mx:VDividedBox height="100%" width="100%" id="vdividedbox2">
+							<mx:DataGrid height="100%" id="datagrid1" editable="false" width="100%">
+								<mx:columns>
+									<mx:DataGridColumn headerText="File" dataField="FileName"/>
+									<mx:DataGridColumn headerText="Rev." dataField="Revision"/>
+									<mx:DataGridColumn headerText="Size" dataField="SizeBytes"/>
+									<mx:DataGridColumn headerText="Age" dataField="Age"/>
+									<mx:DataGridColumn headerText="Author" dataField="Author"/>
+								</mx:columns>
+							</mx:DataGrid>
+						</mx:VDividedBox>
+					</mx:HDividedBox>
+				</mx:VDividedBox>
+			</mx:AddChild>
+		</mx:State>
+		<mx:State name="FileHistory" basedOn="DirBrowse">
+			<mx:SetProperty target="{hdividedbox1}" name="height" value="25%"/>
+			<mx:AddChild relativeTo="{vBrowserBox}" position="lastChild">
+				<mx:DataGrid id="datagrid2" height="100%" width="100%" editable="false">
+					<mx:columns>
+						<mx:DataGridColumn headerText="Rev" dataField="Revision"/>
+						<mx:DataGridColumn headerText="Age" dataField="Age"/>
+						<mx:DataGridColumn headerText="Author" dataField="Author"/>
+						<mx:DataGridColumn headerText="Comment" dataField="Comment"/>
+					</mx:columns>
+				</mx:DataGrid>
+			</mx:AddChild>
+			<mx:SetProperty target="{hdividedbox1}" name="height" value="200"/>
+		</mx:State>
+		<mx:State name="FileDiff" basedOn="FileHistory">
+			<mx:SetProperty target="{datagrid2}" name="height" value="128"/>
+			<mx:AddChild relativeTo="{vBrowserBox}" position="lastChild">
+				<mx:ApplicationControlBar width="100%">
+					<mx:PopUpButton label="Parallel"/>
+					<mx:VRule width="10" height="20"/>
+					<mx:Label text="Context:"/>
+					<mx:HSlider minimum="0" maximum="6" snapInterval="1" allowTrackClick="true"/>
+				</mx:ApplicationControlBar>
+			</mx:AddChild>
+			<mx:AddChild relativeTo="{vBrowserBox}" position="lastChild">
+				<mx:HBox width="100%" height="50%" id="hbox1">
+					<mx:TextArea width="100%" height="100%" editable="false" id="textarea1"/>
+				</mx:HBox>
+			</mx:AddChild>
+			<mx:SetProperty target="{hdividedbox1}" name="width" value="100%"/>
+			<mx:SetProperty target="{hdividedbox1}" name="height" value="128"/>
+		</mx:State>
+		<mx:State name="ParallelDiff" basedOn="FileDiff">
+			<mx:SetProperty target="{textarea1}" name="width" value="50%"/>
+			<mx:AddChild relativeTo="{hbox1}" position="lastChild">
+				<mx:TextArea width="50%" height="100%"/>
+			</mx:AddChild>
+		</mx:State>
+	</mx:states>
+	<mx:ApplicationControlBar top="10" left="10" right="10" fillColors="[#e0e0e0, #ffffff]" fillAlphas="[1.0, 0.0]">
+		<mx:Label text="Repository:" id="LRepositoryName" width="1%"/>
+		<mx:ComboBox width="100%" id="RepositoryName"></mx:ComboBox>
+		<mx:Button label="Go" id="GoRepository" width="1%"/>
+	</mx:ApplicationControlBar>
+	<mx:TitleWindow width="256" height="96" layout="absolute" horizontalCenter="0" verticalCenter="0" id="Splash" title="flex2svn by Rick Osborne">
+		<mx:ProgressBar bottom="10" horizontalCenter="0"/>
+	</mx:TitleWindow>
+	
+</mx:Application>
