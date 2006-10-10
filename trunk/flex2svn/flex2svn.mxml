@@ -1,12 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute">
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" styleName="plain">
+	<mx:Style source="flex2svn.css" />
+	<mx:Script source="flex2svn.as" />
+	<mx:HTTPService url="flex2svn.xml" id="Config" contentType="application/xml" result="doneConfigLoad(event);" fault="errFaultEvent(event);" invoke="startConfigLoad(event);" />
+	<mx:HTTPService url="{Proxy[0].href}" id="DirProxy" contentType="application/xml" result="doneDirProxy(event);" fault="errFaultEvent(event);" invoke="startDirLoad(event);" />
 	<mx:states>
-		<mx:State name="DirBrowse">
+		<mx:State name="PickRepository">
 			<mx:RemoveChild target="{Splash}"/>
+			<mx:AddChild>
+				<mx:ApplicationControlBar top="4" left="4" right="4" id="acbRepository">
+					<mx:Label text="Repository:" id="LRepositoryName" width="1%"/>
+					<mx:ComboBox width="100%" id="RepositoryName" labelField="title" dataProvider="{Config.result.flex2svn.repository}" change="setRepository(event)" />
+					<mx:Button label="Go" id="GoRepository" width="1%" click="currentState='DirBrowse'"/>
+				</mx:ApplicationControlBar>
+			</mx:AddChild>
+		</mx:State>
+		<mx:State name="DirBrowse" basedOn="PickRepository" enterState="doDirBrowse();">
 			<mx:AddChild position="lastChild">
-				<mx:VDividedBox id="vBrowserBox" top="56" left="10" right="10" bottom="10">
+				<mx:VDividedBox id="vBrowserBox" top="40" left="4" right="4" bottom="4">
 					<mx:HDividedBox id="hdividedbox1" width="100%" height="100%">
-						<mx:Tree height="100%" id="tree1"></mx:Tree>
+						<mx:Tree height="100%" id="treeDirs" dataProvider="{RootDirs}" labelField="Name" />
 						<mx:VDividedBox height="100%" width="100%" id="vdividedbox2">
 							<mx:DataGrid height="100%" id="datagrid1" editable="false" width="100%">
 								<mx:columns>
@@ -61,13 +74,7 @@
 			</mx:AddChild>
 		</mx:State>
 	</mx:states>
-	<mx:ApplicationControlBar top="10" left="10" right="10" fillColors="[#e0e0e0, #ffffff]" fillAlphas="[1.0, 0.0]">
-		<mx:Label text="Repository:" id="LRepositoryName" width="1%"/>
-		<mx:ComboBox width="100%" id="RepositoryName"></mx:ComboBox>
-		<mx:Button label="Go" id="GoRepository" width="1%"/>
-	</mx:ApplicationControlBar>
-	<mx:TitleWindow width="256" height="96" layout="absolute" horizontalCenter="0" verticalCenter="0" id="Splash" title="flex2svn by Rick Osborne">
-		<mx:ProgressBar bottom="10" horizontalCenter="0"/>
-	</mx:TitleWindow>
-	
+	<mx:TitleWindow width="256" height="96" layout="absolute" horizontalCenter="0" verticalCenter="0" id="Splash" title="flex2svn by Rick Osborne" creationComplete="Config.send()">
+		<mx:ProgressBar bottom="10" horizontalCenter="0" id="pbLoad" label="Reticulating Splines ..."/>
+	</mx:TitleWindow>	
 </mx:Application>
