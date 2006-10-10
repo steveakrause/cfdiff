@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<files path="/">
+	<dir id="dir1" lastModified="2006-10-10 01:01:01" />
+	<dir id="dir2" lastModified="2006-10-10 02:02:02" />
+	<dir id="dir3" lastModified="2006-10-10 03:03:03" />
+	<file id="file1.xml" lastModified="2006-10-11 01:01:01" />
+	<file id="file2.cfc" lastModified="2006-10-11 01:01:01" />
+	<file id="file3.bin" lastModified="2006-10-11 01:01:01" />
+</files>

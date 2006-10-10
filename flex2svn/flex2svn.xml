@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flex2svn>
+	<proxy href="fakeproxy.xml" />
+	<repository id="cfdiff" href="http://cfdiff.googlecode.com/svn/trunk/" title="cfdiff on Google Code" />
+	<filetype extensions="cfc,cfm,cfml" title="ColdFusion" icon="icons/cf.png" diffable="true" />
+	<filetype extensions="txt,log" title="Text" icon="icons/text.png" diffable="true" />
+	<filetype extensions="php,php4,php5" title="PHP" icon="icons/php.png" diffable="true" />
+	<filetype extensions="asp,aspx" title="ASP" icon="icons/asp.png" diffable="true" />
+	<filetype extensions="xml,wddx" title="XML" icon="icons/xml.png" diffable="true" />
+	<filetype extensions="html,htm,shtm,shtml" title="HTML" icon="icons/html.png" diffable="true" />
+	<filetype extensions="sql,query" title="SQL" icon="icons/sql.png" diffable="true" />
+	<filetype extensions="css" title="Stylesheet" icon="icons/css.png" diffable="true" />
+	<filetype extensions="js" title="JavaScript" icon="icons/js.png" diffable="true" />
+	<filetype extensions="as" title="ActionScript" icon="icons/as.png" diffable="true" />
+	<filetype extensions="mxml" title="Flex" icon="icons/flex.png" diffable="true" />
+</flex2svn>

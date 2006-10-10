@@ -1,0 +1,20 @@
+Application, ApplicationControlBar, TitleWindow, Panel {
+	dropShadowEnabled: false;
+	padding-right: 2px;
+	padding-left: 2px;
+	padding-top: 2px;
+	padding-bottom: 2px;
+}
+
+ApplicationControlBar {
+	fillColors: #112244, #112244;
+	color: #224488;
+	font-weight: bold;
+	fillAlphas: 0.5, 0.1;
+}
+
+TitleWindow {
+	background-color: #eeeeee;
+	border-color: #112244;
+	color: #224488;
+}
