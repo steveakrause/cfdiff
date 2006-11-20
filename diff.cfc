@@ -1,15 +1,23 @@
 <cfcomponent name="Diff" displayname="Diff" hint="Text file differencing engine" namespace="org.rickosborne">
 	<!--- 
-	diff.cfc
-	Original coding by Rick Osborne
-	Based on various differencing engines found on the intarweb
+	Original code by Rick Osborne, 2006
+	  http://cfdiff.googlecode.com/
+	... released under the Mozilla Public License v1.1
+	  http://www.mozilla.org/MPL/
+	... with an algorithm translated from the C-Sharp source by Matthias Hertel
+	  http://www.mathertel.de/Diff/
+	... which was originally released under the Creative Commins Attribution 2.0 Germany license
+	  http://creativecommons.org/licenses/by/2.0/de/
+	... and is based on a paper by Eugene Meyers
+	  Algorithmica Vol. 1 No. 2, 1986, p 251: "An O(ND) Difference Algorithm and its Variations"
 	
-	License: Mozilla Public License (MPL) version 1.1 - http://www.mozilla.org/MPL/
-	READ THE LICENSE BEFORE YOU USE OR MODIFY THIS CODE
-	 --->
+	  READ THE LICENSES BEFORE YOU USE OR MODIFY THIS CODE
+	--->
+
 	<cfset this.OPERATION_INSERT="+">
 	<cfset this.OPERATION_UPDATE="!">
 	<cfset this.OPERATION_DELETE="-">
+	<cfset this.MAX_RECURSE_COUNT=25>
 	
 	<cffunction name="ResultColumnList" hint="Return the list of columns present in any result query" access="public" output="false" returntype="string">
 		<cfreturn "Operation,AtFirst,AtSecond,Count">
@@ -22,7 +30,17 @@
 		<cfargument name="AtSecond" type="string" required="true">
 		<cfargument name="Count" type="numeric" required="false">
 		<cfset var ColName="">
-		<cfif (Result.RecordCount GT 0) AND (Arguments.Operation EQ this.OPERATION_INSERT) AND (Arguments.Count EQ 1) AND (Result.Count[Result.RecordCount] EQ 1) AND (Arguments.AtSecond EQ Result.AtSecond[Result.RecordCount]) AND (Arguments.AtFirst EQ IncrementValue(Result.AtFirst[Result.RecordCount]))>
+		<cfif (Result.RecordCount GT 0) AND (Arguments.Operation EQ this.OPERATION_INSERT) AND (Result.Operation[Result.RecordCount] EQ this.OPERATION_INSERT) AND (Arguments.AtSecond EQ (Result.AtSecond[Result.RecordCount] + Result.Count[Result.RecordCount]))>
+			<cfset Result.Count[Result.RecordCount]=Result.Count[Result.RecordCount]+Arguments.Count>
+		<cfelseif (Result.RecordCount GT 0) AND (Arguments.Operation EQ this.OPERATION_DELETE) AND (Result.Operation[Result.RecordCount] EQ this.OPERATION_DELETE) AND (Arguments.AtFirst EQ (Result.AtFirst[Result.RecordCount] + Result.Count[Result.RecordCount]))>
+			<cfset Result.Count[Result.RecordCount]=Result.Count[Result.RecordCount]+Arguments.Count>
+		<cfelseif (Result.RecordCount GT 0) AND (Arguments.Operation EQ this.OPERATION_INSERT) AND (Result.Operation[Result.RecordCount] EQ this.OPERATION_DELETE) AND (Arguments.Count EQ 1) AND (Result.Count[Result.RecordCount] EQ 1) AND (Arguments.AtSecond EQ Result.AtSecond[Result.RecordCount]) AND (Arguments.AtFirst EQ IncrementValue(Result.AtFirst[Result.RecordCount]))>
+			<!---
+			This is a special case for when the last line was a one-line 
+			delete and this is a one-line insert, in other words, an update
+			--->
+			<cfset QuerySetCell(Result, "Operation", this.OPERATION_UPDATE, Result.RecordCount)>
+		<cfelseif (Result.RecordCount GT 0) AND (Arguments.Operation EQ this.OPERATION_DELETE) AND (Result.Operation[Result.RecordCount] EQ this.OPERATION_INSERT) AND (Arguments.Count EQ 1) AND (Result.Count[Result.RecordCount] EQ 1) AND (Arguments.AtFirst EQ Result.AtFirst[Result.RecordCount]) AND (Arguments.AtSecond EQ IncrementValue(Result.AtSecond[Result.RecordCount]))>
 			<!---
 			This is a special case for when the last line was a one-line 
 			delete and this is a one-line insert, in other words, an update
@@ -40,7 +58,7 @@
 		<!--- We don't need to return anything because queries are passed by reference --->
 	</cffunction>
 	
-	<cffunction name="DiffArrays" hint="Compute the difference between two arrays" access="public" output="false" returntype="query">
+	<cffunction name="DiffArrays_v1" hint="Compute the difference between two arrays" access="public" output="false" returntype="query">
 		<cfargument name="First" type="array" required="true" />
 		<cfargument name="Second" type="array" required="true" />
 		<cfset var Result=QueryNew(this.ResultColumnList())>
@@ -115,7 +133,6 @@
 		<cfset TwoStart=TwoStart-1>
 		<!--- 
 		Worst algorithm ever!
-		TODO: Get a better algorithm!
 		Basically, walk backwards through both arrays, building a ranking of common substrings.
 		--->
 		<cfloop from="#OneLen#" to="1" index="i" step="-1">
@@ -402,4 +419,154 @@
 		<cfreturn Result>
 	</cffunction>
 	
+	<cffunction name="DiffArrays" hint="Compute the difference between two arrays" access="public" output="true" returntype="query">
+		<cfargument name="First" type="array" required="true" />
+		<cfargument name="Second" type="array" required="true" />
+		<cfset var Result=QueryNew(this.ResultColumnList())>
+		<cfset HashifyArrays(Arguments)>
+		<cfset LCS(Result,Arguments,1,ArrayLen(Arguments.First)+1,1,ArrayLen(Arguments.Second)+1)>
+		<cfreturn Result>
+	</cffunction>
+	
+	<cffunction name="HashifyArrays" hint="Take two arrays and convert their contents into unique numbers" access="private" output="true" returntype="void">
+		<cfargument name="Arrays" type="struct" required="true" />
+		<cfset var H=StructNew()>
+		<cfset var i=0>
+		<cfset var j=0>
+		<cfset var ArrayNum=1>
+		<!--- We had to pass in a struct, as CF passes arrays by value instead of by reference.  Lame! --->
+		<cfloop collection="#Arguments.Arrays#" item="ArrayNum">
+			<cfloop from="1" to="#ArrayLen(Arguments.Arrays[ArrayNum])#" index="i">
+				<cfif NOT StructKeyExists(H,Arguments.Arrays[ArrayNum][i])>
+					<cfset j=j+1>
+					<cfset H[Arguments.Arrays[ArrayNum][i]]=j>
+				</cfif>
+				<cfset Arguments.Arrays[ArrayNum][i]=H[Arguments.Arrays[ArrayNum][i]]>
+			</cfloop>
+		</cfloop>
+		<cfreturn>
+	</cffunction>
+	
+	<cffunction name="SMS" hint="Shortest Middle Snake" access="private" output="false" returntype="array">
+		<cfargument name="Args" type="struct" required="true">
+		<cfargument name="LowerA" type="numeric" required="true">
+		<cfargument name="UpperA" type="numeric" required="true">
+		<cfargument name="LowerB" type="numeric" required="true">
+		<cfargument name="UpperB" type="numeric" required="true">
+		<cfset var Result=ArrayNew(1)>
+		<cfset var MaxLen=ArrayLen(Args.First) + ArrayLen(Args.Second) + 1>
+		<cfset var DownK=Arguments.LowerA-Arguments.LowerB><!--- The k-line to start the forward search --->
+		<cfset var UpK=Arguments.UpperA-Arguments.UpperB><!--- The k-line to start the reverse search --->
+		<cfset var Delta=(Arguments.UpperA-Arguments.LowerA)-(Arguments.UpperB-Arguments.LowerB)>
+		<cfset var OddDelta=Delta MOD 2>
+		<cfset var DownVector=ArrayNew(1)>
+		<cfset var UpVector=ArrayNew(1)>
+		<cfset var UpOffset=MaxLen-DownK+1>
+		<cfset var DownOffset=MaxLen-UpK+1>
+		<cfset var MaxD=Int(((Arguments.UpperA-Arguments.LowerA+Arguments.UpperB-Arguments.LowerB)/2)+1)>
+		<cfset var D=0>
+		<cfset var k=0>
+		<cfset var x=0>
+		<cfset var y=0>
+		<!--- <cfoutput><p>Search the box: A[#Arguments.LowerA#-#Arguments.UpperA#] to B[#Arguments.LowerB#-#Arguments.UpperB#]</p></cfoutput> --->
+		<!--- Initialize all of our arrays --->
+		<cfset ArraySet(DownVector,1,(2*MaxLen)+4,0)><!--- For the (0,0) to (x,y) search --->
+		<cfset ArraySet(UpVector,1,(2*MaxLen)+4,0)><!--- For the (u,v) to (N,M) search --->
+		<cfset ArraySet(Result,1,2,0)>
+		<cfset DownVector[DownOffset+DownK+1]=Arguments.LowerA>
+		<cfset UpVector[UpOffset+UpK-1]=Arguments.UpperA>
+		<cfloop from="0" to="#MaxD#" index="D">
+			<!--- Extend the forward path --->
+			<cfloop from="#Int(DownK-D)#" to="#Int(DownK+D)#" step="2" index="k">
+				<cfif k EQ (DownK - D)>
+					<cfset x=DownVector[DownOffset+k+1]><!--- move down --->
+				<cfelse>
+					<cfset x=DownVector[DownOffset+k-1]+1><!--- and then a step to the ri-i-i-i-ight --->
+					<cfif (k LT (DownK+D)) AND (DownVector[DownOffset+k+1] GTE x)>
+						<cfset x=DownVector[DownOffset+k+1]><!--- move down --->
+					</cfif>
+				</cfif>
+				<cfset y=x-k>
+				<!--- find the end of the furthest-reaching forward D-path in diagonal k --->
+				<cfloop condition="(x LT Arguments.UpperA) AND (y LT Arguments.UpperB) AND (Args.First[x] EQ Args.Second[y])">
+					<cfset x=x+1>
+					<cfset y=y+1>
+				</cfloop>
+				<cfset DownVector[DownOffset+k]=x>
+				<!--- overlap? --->
+				<cfif (OddDelta NEQ 0) AND (UpK-D LT k) AND (k LT UpK+d)>
+					<cfif (UpVector[UpOffset+k] LTE DownVector[DownOffset+k])>
+						<cfset Result[1]=DownVector[DownOffset+k]>
+						<cfset Result[2]=DownVector[DownOffset+k]-k>
+						<cfreturn Result>
+					</cfif>
+				</cfif>
+			</cfloop><!--- k --->
+			<!--- Extend the reverse path --->
+			<cfloop from="#Int(UpK-D)#" to="#Int(UpK+D)#" step="2" index="k">
+				<cfif k EQ (UpK + D)>
+					<cfset x=UpVector[UpOffset+k-1]><!--- move up --->
+				<cfelse>
+					<cfset x=UpVector[UpOffset+k+1]-1><!--- move left --->
+					<cfif (k GT (UpK - D)) AND (UpVector[UpOffset+k-1] LT x)>
+						<cfset x=UpVector[UpOffset+k-1]><!--- move up --->
+					</cfif>
+				</cfif>
+				<cfset y=x-k>
+				<cfloop condition="(x GT Arguments.LowerA) AND (y GT Arguments.LowerB) AND (Args.First[x-1] EQ Args.Second[y-1])">
+					<cfset x=x-1><!--- Move diagonally --->
+					<cfset y=y-1>
+				</cfloop>
+				<cfset UpVector[UpOffset+k]=x>
+				<cfif (OddDelta EQ 0) AND ((DownK-D) LTE k) AND (k LTE (DownK+D))>
+					<cfif UpVector[UpOffset+k] LTE DownVector[DownOffset+k]>
+						<cfset Result[1]=DownVector[DownOffset+k]>
+						<cfset Result[2]=DownVector[DownOffset+k]-k>
+						<cfreturn Result>
+					</cfif>
+				</cfif>
+			</cfloop>
+		</cfloop><!--- D --->
+		<cfdump var="#UpVector#" label="UpVector">
+		<cfdump var="#DownVector#" label="DownVector">
+		<cfdump var="#Result#" label="Result">
+		<cfdump var="#Arguments#" label="Arguments">
+		<cfthrow message="Unreachable point reached in diff.SMS">
+	</cffunction>
+	
+	<cffunction name="LCS" returntype="void" description="Divide-and-conquer version of Longest-Common-Subsequence algorithm" access="private" output="false">
+		<cfargument name="Result" type="query" required="true">
+		<cfargument name="Args" type="struct" required="true">
+		<cfargument name="LowerA" type="numeric" required="true">
+		<cfargument name="UpperA" type="numeric" required="true">
+		<cfargument name="LowerB" type="numeric" required="true">
+		<cfargument name="UpperB" type="numeric" required="true">
+		<cfargument name="RecurseCount" type="numeric" required="false" default="0">
+		<cfset var i=0>
+		<cfset var a="">
+		<!--- <cfoutput><p>Analyse the box: A[#ArgsLowerA#-#ArgsUpperA#] to B[#ArgsLowerB#-#ArgsUpperB#]</p></cfoutput> --->
+		<!--- Eliminate matching lines at the beginning --->
+		<cfif RecurseCount GT this.MAX_RECURSE_COUNT>
+			<cfthrow message="LCS called too many times">
+		</cfif>
+		<cfloop condition="(Arguments.LowerA LT Arguments.UpperA) AND (Arguments.LowerB LT Arguments.UpperB) AND (Args.First[Arguments.LowerA] EQ Args.Second[Arguments.LowerB])">
+			<cfset Arguments.LowerA=Arguments.LowerA+1>
+			<cfset Arguments.LowerB=Arguments.LowerB+1>
+		</cfloop>
+		<!--- Eliminate matching lines at the end --->
+		<cfloop condition="(Arguments.LowerA LT Arguments.UpperA) AND (Arguments.LowerB LT Arguments.UpperB) AND (Args.First[Arguments.UpperA-1] EQ Args.Second[Arguments.UpperB-1])">
+			<cfset Arguments.UpperA=Arguments.UpperA-1>
+			<cfset Arguments.UpperB=Arguments.UpperB-1>
+		</cfloop>
+		<cfif Arguments.LowerA EQ Arguments.UpperA>
+			<cfset AddDifference(Arguments.Result,this.OPERATION_INSERT,Arguments.LowerA,Arguments.LowerB,Arguments.UpperB-Arguments.LowerB)>
+		<cfelseif Arguments.LowerB EQ Arguments.UpperB>
+			<cfset AddDifference(Arguments.Result,this.OPERATION_DELETE,Arguments.LowerA,Arguments.LowerB,Arguments.UpperA-Arguments.LowerA)>
+		<cfelse>
+			<cfset a=SMS(Args,Arguments.LowerA,Arguments.UpperA,Arguments.LowerB,Arguments.UpperB)>
+			<cfset LCS(Arguments.Result,Args,Arguments.LowerA,a[1],Arguments.LowerB,a[2],Arguments.RecurseCount+1)>
+			<cfset LCS(Arguments.Result,Args,a[1],Arguments.UpperA,a[2],Arguments.UpperB,Arguments.RecurseCount+1)>
+		</cfif>
+</cffunction>
+
 </cfcomponent>
