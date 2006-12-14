@@ -1,0 +1,100 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="en" xml:lang="en">
+<head>
+<title>cfdiff Documentation</title>
+<style type="text/css" title="cfdiff">
+html, body {
+	padding: 8px;
+	background-color: white;
+	color: black;
+	font-size: 1em;
+}
+h1 {
+	margin: -24px -24px 0px -24px;
+	padding: 8px;
+	color: #def;
+	background-color: #248;
+	border-bottom: 1px dashed #acf;
+	font-size: 2em;
+}
+h2 {
+	margin: 0px -24px 8px -24px;
+	padding: 4px 8px;
+	border: 1px solid #248;
+	border-top: none;
+	background-color: #48f;
+	color: #def;
+	font-size: 1.5em;
+}
+.filelist { width: 100%; border: 1px solid #999; }
+.filelist th, .foot { background-color: #ccf; }
+.even { background-color: #e8e8ff; }
+.file, code, pre.code { font-family: 'Bitstream Sans Mono', 'Sans Mono', 'Lucida Console', 'Monaco', 'Lucida Typewriter', 'Courier New', Courier, fixed-width, monospace; }
+.file { color: maroon; }
+pre.code, code { background-color: #ffd; }
+pre.code { border-left: 1px solid #ff9; border-right: 1px solid #ff9; padding: 0.75em; max-height: 8em; overflow: auto; }
+</style>
+</head>
+<body>
+<h1>cfdiff</h1>
+<h2>Quick Start</h2>
+<ol>
+	<li>There's no ZIP/TAR archive of the project, so you'll need to download each of the files individually from <a href="http://cfdiff.googlecode.com/svn/trunk/" target="_blank">the cfdiff Google Code repository</a>.  See the next section for a list of what each of the files do.</li>
+	<li>Copy at least the <kbd class="file">diff.cfc</kbd> file to your CFC area.
+		<ul>
+			<li><strong>If you are the organized type ... </strong> make a folder in your web root named <kbd class="file">org</kbd>, then a subfolder under that named <kbd class="file">rickosborne</kbd>, and put the file under there.</li>
+			<li><strong>If you are the lazy type ... </strong> drop it in your web root.</li>
+			<li><strong>If you know what you are doing ... </strong> then I really don't care where you drop it.</li>
+		</ul>
+	</li>
+	<li>Write some code that does something like this:
+		<pre class="code">&lt;cfset Differ = CreateObject("component", "org.rickosborne.diff")&gt;
+&lt;cfset LeftFile = ListToArray("a,b,c,d,e,f,g")&gt;
+&lt;cfset RightFile = ListToArray("a,d,e,1,2,f,g,h")&gt;
+&lt;cfset Difference = Differ.DiffArrays(LeftFile, RightFile)&gt;
+&lt;cfset Pretty = Differ.Parallelize(Difference, LeftFile, RightFile)&gt;</pre>
+		If you chose the <em>lazy</em> option from the previous list, your call to create the CFC will look like this:
+		<pre class="code">&lt;cfset Differ=CreateObject("component","diff")&gt;</pre>
+		If you chose the third option, then I presume you can figure out how to create the object.
+	</li>
+	<li>That last variable, <code>Pretty</code>, is the one you'll want to dump or loop over or whatever.  If you prefer a unified diff instead of parallel, you can use <code>UnifiedDiffArrays()</code> instead of <code>Parallelize()</code> with the same arguments.</li>
+</ol>
+<h2>Files</h2>
+<table class="filelist">
+	<thead>
+		<tr>
+			<th>File</th>
+			<th>Purpose</th>
+			<th nowrap="nowrap">Final Location</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr class="odd"><td class="file"><a href="http://cfdiff.googlecode.com/svn/trunk/cfdiff.css">cfdiff.css</a></td><td>Example stylesheet for the SVN browser.</td><td>SVN Browser root.</td></tr>
+		<tr class="even"><td class="file"><a href="http://cfdiff.googlecode.com/svn/trunk/diff.cfc">diff.cfc</a></td><td>The main component that does all of the work.</td><td>See above.  Maybe web root, maybe not.</td></tr>
+		<tr class="odd"><td class="file"><a href="http://cfdiff.googlecode.com/svn/trunk/difftest.cfc">difftest.cfc</a></td><td>Unit tests for the <kbd class="file">diff.cfc</kbd> file.</td><td><em>Not required.</em></td></tr>
+		<tr class="even"><td class="file"><a href="http://cfdiff.googlecode.com/svn/trunk/svn.cfm">svn.cfm</a></td><td>Basic SVN browser front-end.</td><td>Web root?</td></tr>
+		<tr class="odd"><td class="file"><a href="http://cfdiff.googlecode.com/svn/trunk/svnbrowser.cfc">svnbrowser.cfc</a></td><td>Back-end for the SVN browser that interfaces with the JavaSVN API.</td><td>See above.  Maybe web root, maybe not.</td></tr>
+		<tr class="even"><td class="file"><a href="http://cfdiff.googlecode.com/svn/trunk/testdiff.cfm">testdiff.cfm</a></td><td>Used to run the unit tests for <kbd class="file">diff.cfc</kbd>.</td><td><em>Not required.</em></td></tr>
+	</tbody>
+	<tfoot>
+		<tr class="foot"><td colspan="3">6 files.</td></tr>
+	</tfoot>
+</table>
+<h2>Implementation Details</h2>
+<p>If you want to use the SVN Browser, you'll need to install the <a href="http://tmate.org/svn/" target="_blank">TMate JavaSVN library</a>.  If you just want to run diffs, you <strong>do not</strong> need this library.</p>
+<p>Look at <kbd class="file">svn.cfm</kbd> for the easiest way to show a diff.  It's going to look something like this:</p>
+<pre class="code">&lt;cfloop query="Pretty"&gt;
+	&lt;tr&gt;
+		&lt;td&gt;&lt;cfif IsNumeric(AtFirst)&gt;#NumberFormat(AtFirst)#&lt;cfelse&gt;&amp;nbsp;&lt;/cfif&gt;&lt;/td&gt;
+		&lt;td&gt;&lt;cfif Len(ValueFirst) GT 0&gt;#Replace(HTMLEditFormat(ValueFirst),Chr(9),"&amp;nbsp;&amp;nbsp;&amp;nbsp;","ALL")#&lt;cfelse&gt;&amp;nbsp;&lt;/cfif&gt;&lt;/td&gt;
+		&lt;td&gt;&lt;cfif IsNumeric(AtSecond)&gt;#NumberFormat(AtSecond)#&lt;cfelse&gt;&amp;nbsp;&lt;/cfif&gt;&lt;/td&gt;
+		&lt;td&gt;&lt;cfif Len(ValueSecond) GT 0&gt;#Replace(HTMLEditFormat(ValueSecond),Chr(9),"&amp;nbsp;&amp;nbsp;&amp;nbsp;","ALL")#&lt;cfelse&gt;&amp;nbsp;&lt;/cfif&gt;&lt;/td&gt;
+	&lt;/tr&gt;
+&lt;/cfloop&gt;</pre>
+<p>If you decide you'd prefer to work with the raw difference, that's what that intermediate <code>Difference</code> variable is.  Go to town.</p>
+<h2>License</h2>
+<p>This code is licensed under the <a href="http://www.mozilla.org/MPL/" target="_blank">Mozilla Public License (MPL) version 1.1</a>.  Read the license before you use the code!</p>
+<h2>Version / About</h2>
+<p>Original ColdFusion code by <a href="http://rickosborne.org/">Rick Osborne</a>, 2006.  The code includes an algorithm translated from the C-Sharp source by <a href="http://www.mathertel.de/Diff/">Matthias Hertel</a>, which itself was originally released under the <a href="http://creativecommons.org/licenses/by/2.0/de/">Creative Commons Attribution 2.0 Germany license</a> and is based on a paper by Eugene Meyers in <em>Algorithmica Vol. 1 No. 2, 1986, p 251: "An O(ND) Difference Algorithm and its Variations"</em>.</p>
+</body>
+</html>
